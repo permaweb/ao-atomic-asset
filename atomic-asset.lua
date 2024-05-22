@@ -79,7 +79,6 @@ Handlers.add('Info', Handlers.utils.hasMatchingTag('Action', 'Info'), function(m
 			Ticker = Ticker,
 			Denomination = Denomination,
 			Balances = Balances,
-			Logo = Logo
 		})
 	})
 end)
