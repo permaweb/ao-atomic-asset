@@ -28,47 +28,6 @@ local function decodeMessageData(data)
 	return true, decodedData
 end
 
-local function validateTransferData(msg)
-	local decodeCheck, data = decodeMessageData(msg.Data)
-
-	if not decodeCheck or not data then
-		return nil, string.format('Failed to parse data, received: %s. %s.', msg.Data,
-			'Data must be an object - { Recipient: string, Quantity: number }')
-	end
-
-	-- Check if recipient and quantity are present
-	if not data.Recipient or not data.Quantity then
-		return nil, 'Invalid arguments, required { Recipient: string, Quantity: number }'
-	end
-
-	-- Check if recipient is a valid address
-	if not checkValidAddress(data.Recipient) then
-		return nil, 'Recipient must be a valid address'
-	end
-
-	-- Check if quantity is a valid integer greater than zero
-	if not checkValidAmount(data.Quantity) then
-		return nil, 'Quantity must be an integer greater than zero'
-	end
-
-	-- Recipient cannot be sender
-	if msg.From == data.Recipient then
-		return nil, 'Recipient cannot be sender'
-	end
-
-	-- Sender does not have a balance
-	if not Balances[msg.From] then
-		return nil, 'Sender does not have a balance'
-	end
-
-	-- Sender does not have enough balance
-	if bint(Balances[msg.From]) < bint(data.Quantity) then
-		return nil, 'Sender does not have enough balance'
-	end
-
-	return data
-end
-
 -- Read process state
 Handlers.add('Info', Handlers.utils.hasMatchingTag('Action', 'Info'), function(msg)
 	ao.send({
@@ -83,11 +42,14 @@ Handlers.add('Info', Handlers.utils.hasMatchingTag('Action', 'Info'), function(m
 	})
 end)
 
--- Transfer balance to recipient (Data - { Recipient, Quantity }) -- TODO: validation errors
+-- Transfer balance to recipient (Data - { Recipient, Quantity })
 Handlers.add('Transfer', Handlers.utils.hasMatchingTag('Action', 'Transfer'), function(msg)
-	local data, error = validateTransferData(msg)
+	local data = {
+		Recipient = msg.Tags.Recipient,
+		Quantity = msg.Tags.Quantity
+	}
 
-	if data then
+	if checkValidAddress(data.Recipient) and checkValidAmount(data.Quantity) then
 		-- Transfer is valid, calculate balances
 		if not Balances[data.Recipient] then
 			Balances[data.Recipient] = '0'
@@ -106,18 +68,22 @@ Handlers.add('Transfer', Handlers.utils.hasMatchingTag('Action', 'Transfer'), fu
 
 		local debitNoticeTags = {
 			Status = 'Success',
-			Message = 'Balance transferred, debit notice issued'
+			Message = 'Balance transferred, debit notice issued',
+			Recipient = msg.Tags.Recipient,
+			Quantity = msg.Tags.Quantity,
 		}
 
 		local creditNoticeTags = {
 			Status = 'Success',
-			Message = 'Balance transferred, credit notice issued'
+			Message = 'Balance transferred, credit notice issued',
+			Sender = msg.From,
+			Quantity = msg.Tags.Quantity,
 		}
 
 		for tagName, tagValue in pairs(msg) do
 			if string.sub(tagName, 1, 2) == 'X-' then
-				debitNoticeTags[string.sub(tagName, 3)] = tagValue
-				creditNoticeTags[string.sub(tagName, 3)] = tagValue
+				debitNoticeTags[tagName] = tagValue
+				creditNoticeTags[tagName] = tagValue
 			end
 		end
 
@@ -141,12 +107,6 @@ Handlers.add('Transfer', Handlers.utils.hasMatchingTag('Action', 'Transfer'), fu
 				Sender = msg.From,
 				Quantity = tostring(data.Quantity)
 			})
-		})
-	else
-		ao.send({
-			Target = msg.From,
-			Action = 'Transfer-Error',
-			Tags = { Status = 'Error', Message = error or 'Error transferring balances' }
 		})
 	end
 end)
