@@ -1,8 +1,11 @@
 # AO Atomic Asset
 
-[AO Atomic Assets](atomic-asset.lua) follow the token spec designed for exchangeable tokens which can be found [here](https://ao.arweave.dev/#/)
+## Overview
 
-The creation of an atomic asset happens with these steps
+Atomic assets are unique digital items stored on Arweave. Unlike traditional NFTs, the asset data is uploaded together with a smart contract in a single transaction which is inseparable and does not rely on external components.
+
+## How it works
+AO atomic assets follow the token spec designed for exchangeable tokens which can be found [here](https://ao.arweave.dev/#/). The creation of an atomic asset happens with these steps:
 
 1. The [asset process handlers](https://arweave.net/y9VgAlhHThl-ZiXvzkDzwC5DEjfPegD6VAotpP3WRbs) are fetched from Arweave
 2. Asset fields are replaced with the values submitted by the user
