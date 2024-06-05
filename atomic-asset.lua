@@ -42,23 +42,23 @@ Handlers.add('Info', Handlers.utils.hasMatchingTag('Action', 'Info'), function(m
 	})
 end)
 
-function Trusted (msg)
-  local mu = "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY"
-  -- return false if trusted
-  if msg.Owner == mu then
-    return false
-  end
-  if msg.From == msg.Owner then
-    return false
-  end
-  return true
+function Trusted(msg)
+	local mu = "fcoN_xJeisVsPXA-trzVAuIiqO3ydLQxM-L4XbrQKzY"
+	-- return false if trusted
+	if msg.Owner == mu then
+		return false
+	end
+	if msg.From == msg.Owner then
+		return false
+	end
+	return true
 end
 
 Handlers.prepend("qualify message",
-  Trusted,
-  function (msg)
-    print("This Msg is not trusted!")
-  end
+	Trusted,
+	function(msg)
+		print("This Msg is not trusted!")
+	end
 )
 
 -- Transfer balance to recipient (Data - { Recipient, Quantity })
@@ -223,16 +223,25 @@ Handlers.add('Balances', Handlers.utils.hasMatchingTag('Action', 'Balances'),
 
 -- Initialize a request to add the uploaded asset to a profile
 Handlers.add('Add-Asset-To-Profile', Handlers.utils.hasMatchingTag('Action', 'Add-Asset-To-Profile'), function(msg)
+	print(msg)
 	if checkValidAddress(msg.Tags.ProfileProcess) then
-    	ao.assign({Processes = {msg.Tags.ProfileProcess}, Message = ao.id})
-    else
-    	ao.send({
-    		Target = msg.From,
-    		Action = 'Input-Error',
-    		Tags = {
-    			Status = 'Error',
-    			Message = 'ProfileProcess tag not specified or not a valid Process ID'
-    			}
-    		})
-    	end
+		-- ao.assign({ Processes = { msg.Tags.ProfileProcess }, Message = ao.id })
+		ao.send({
+			Target = msg.Tags.ProfileProcess,
+			Action = 'Add-Uploaded-Asset',
+			Data = json.encode({
+				Id = ao.id,
+				Quantity = msg.Tags.Quantity or '0'
+			})
+		})
+	else
+		ao.send({
+			Target = msg.From,
+			Action = 'Input-Error',
+			Tags = {
+				Status = 'Error',
+				Message = 'ProfileProcess tag not specified or not a valid Process ID'
+			}
+		})
+	end
 end)
