@@ -223,7 +223,7 @@ Handlers.add('Balances', Handlers.utils.hasMatchingTag('Action', 'Balances'),
 
 -- Initialize a request to add the uploaded asset to a profile
 Handlers.add('Add-Asset-To-Profile', Handlers.utils.hasMatchingTag('Action', 'Add-Asset-To-Profile'), function(msg)
-	if msg.From ~= Owner and msg.From ~= ao.id then
+	if msg.From ~= Owner and msg.From ~= Owner and msg.From ~= ao.id then
 		ao.send({
 			Target = msg.From,
 			Action = 'Authorization-Error',
