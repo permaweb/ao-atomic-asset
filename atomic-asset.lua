@@ -6,6 +6,8 @@ if Ticker ~= '<TICKER>' then Ticker = '<TICKER>' end
 if Denomination ~= '<DENOMINATION>' then Denomination = '<DENOMINATION>' end
 if not Balances then Balances = { [Owner] = '<BALANCE>' } end
 
+Transferable = true
+
 local function checkValidAddress(address)
 	if not address or type(address) ~= 'string' then
 		return false
@@ -38,6 +40,7 @@ Handlers.add('Info', Handlers.utils.hasMatchingTag('Action', 'Info'), function(m
 			Ticker = Ticker,
 			Denomination = Denomination,
 			Balances = Balances,
+			Transferable = Transferable
 		})
 	})
 end)
@@ -63,6 +66,11 @@ Handlers.prepend("qualify message",
 
 -- Transfer balance to recipient (Data - { Recipient, Quantity })
 Handlers.add('Transfer', Handlers.utils.hasMatchingTag('Action', 'Transfer'), function(msg)
+	if not Transferable then
+		ao.send({ Target = msg.From, Action = 'Validation-Error', Tags = { Status = 'Error', Message = 'Transfers are not allowed' } })
+		return
+	end
+
 	local data = {
 		Recipient = msg.Tags.Recipient,
 		Quantity = msg.Tags.Quantity
